@@ -1,0 +1,9 @@
+{
+  "name": "warmodel-1.6",
+  "version": "1.6.0",
+  "description": "warmodel 1.6",
+  "main": "app.js",
+  "author": {
+    "name": ""
+  }
+}
