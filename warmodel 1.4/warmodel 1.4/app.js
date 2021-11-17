@@ -66,7 +66,8 @@ var folderEnds = []
 var files = []
 
 //this currently only seems to work on modelesshowroom and not modelesvilles
-while (i < header.indexLength || files.length < header.indexElements) {
+while (files.length < header.indexElements) {
+//while (i < header.indexLength || files.length < header.indexElements) {
 	//read the 2 intigers at the start of the index entry
 	let firstInt = data.readUInt32LE(i)
 	let secondInt = data.readUInt32LE(i + 4)
@@ -89,8 +90,7 @@ while (i < header.indexLength || files.length < header.indexElements) {
 		}
 		let fileName = data.toString("ASCII", fileDataEndOffset + 2, fileNameEndOffset)//save the file name
 		let fullName = path.join("") + fileName
-		files.push(JSON.parse(JSON.stringify({ "name": fullName, "content": fileData, "triangleOffset": 0, "triangleLength": 0, "vertOffset": 0, "vertLength": 0, "verticies": [], "triangles": [], "uvs": [], "meshes": [], "id": data.readUInt16LE(fileDataEndOffset - 2) })))//save all the file info
-		//some of the fields in file are no longer needed.
+		files.push(JSON.parse(JSON.stringify({ "name": fullName, "content": fileData, "id": data.readUInt16LE(fileDataEndOffset - 2) })))//save all the file info
 		//json.parese is to clone the object so we dont just push a reference to the files array
 		if (secondInt != 0) {//if the second int was not zero there are more files in this folder
 			i += secondInt//set i to the location of the next file
@@ -107,8 +107,7 @@ while (i < header.indexLength || files.length < header.indexElements) {
 
 //check how may items we read against the header
 if (files.length != header.indexElements) {
-	//throw ("ERROR, read files not equal to index, found " + files.length + " expected " + header.indexElements)
-	console.log("ERROR, read files not equal to index, found " + files.length + " expected " + header.indexElements)
+	throw ("ERROR, read files not equal to index, found " + files.length + " expected " + header.indexElements)
 }
 
 //read mesh allocation table
@@ -117,6 +116,17 @@ for (i = 0; i < header.meshTable.items; i++) {//for each file
 	localOffset = header.meshTable.offset + i * 12
 	meshAllocationTable.push({ id: data.readUInt16LE(localOffset + 0), textureID: data.readUInt16LE(localOffset + 2), triangleID: data.readUInt16LE(localOffset + 4), vertexID: data.readUInt16LE(localOffset + 6) })
 }
+//print out the mesh allocation table and write it to a file
+var fileString = fileName + " mesh allocation table\n"
+var lastId = -1
+for (i = 0; i < meshAllocationTable.length; i++) {//for each entry in the tables index
+	if (lastId != meshAllocationTable[i].id) {//if the current id is different than the last one we need to print a new file name, could use the mesh table index instead
+		fileString += files[meshAllocationTable[i].id].name + "\n"
+	}
+	lastId = meshAllocationTable[i].id
+	fileString += "\tsubmesh" + "_V" + meshAllocationTable[i].vertexID + "_I" + meshAllocationTable[i].triangleID + "_T" + meshAllocationTable[i].textureID + "\n"
+}
+console.log(fileString)
 
 //read triangle offset table
 var triangleOffsetTable = []//not to be confused with header.triangleOffsetTable
@@ -184,7 +194,7 @@ for (i = 0; i < triangleOffsetTable.length; i++) {//for each entry in the triang
 var subMeshes = []//submeshes are unique more than one file names can reference the same submesh
 for (i = 0; i < meshAllocationTable.length; i++) {//this finds unique combinatios of vertex id, indicie id and texture id.
 	let newSubmesh = { name: "", vertexID: meshAllocationTable[i].vertexID, indicieID: meshAllocationTable[i].triangleID, textureID: meshAllocationTable[i].textureID, verticies: [], uvs: [], triangles: [] }//define our new submesh
-	newSubmesh.name = "submesh_" + i + "_V" + meshAllocationTable[i].vertexID + "_I" + meshAllocationTable[i].triangleID + "_T" + meshAllocationTable[i].textureID//the submeshes name includes all the ids
+	newSubmesh.name = "submesh" + "_V" + meshAllocationTable[i].vertexID + "_I" + meshAllocationTable[i].triangleID + "_T" + meshAllocationTable[i].textureID//the submeshes name includes all the ids
 	//check if it already exists
 	exists = false
 	for (j = 0; j < subMeshes.length; j++) {
