@@ -148,7 +148,7 @@ for (i = 0; i < header.vertexOffsetTable.items; i++) {//read all of the triangle
 //put verticeis in to object
 var verticies = []
 for (i = 0; i < vertexOffsetTable.length; i ++) {//for each entry in the vertex offset table
-	verticies.push({ id: i, pos: [], uvs: [] })
+	verticies.push({ id: i, pos: [], uvs: [], normal: [] })
 	//let localOffset = vertexOffsetTable[i].offset
 	for (j = 0; j < vertexOffsetTable[i].numVerts; j++) {
 		let localOffset = header.vertexOffset + vertexOffsetTable[i].offset + j * 24
@@ -171,6 +171,20 @@ for (i = 0; i < vertexOffsetTable.length; i ++) {//for each entry in the vertex 
 		u = u + uOffset
 		v = v - vOffset + 0.5025
 		verticies[i].uvs.push({ n: j, u: u, v: v })
+
+		//normals (EXPERIMENTAL)
+		//verticies[i].normal.push({ n: j, x: data.readInt8(localOffset + 12), y: data.readInt8(localOffset + 14), z: data.readInt8(localOffset + 13) })
+		let nx = data.readInt8(localOffset + 12)
+		let ny = data.readInt8(localOffset + 14)
+		let nz = data.readInt8(localOffset + 13)
+		//turn normals in to a unit vetor ( u^ = u/|u| )
+		let mag = Math.sqrt(Math.abs(nx * nx ) + Math.abs(ny * ny) + Math.abs(nz * nz))
+		let unx = nx/mag
+		let uny = ny/mag
+		let unz = nz/mag
+		verticies[i].normal.push({ n: j, x: unx, y: uny, z: unz })
+		//this seems to work however the normals need to be flipped in blender,
+		//i have not found a way to fix this, inverting each component does not seem to work
 	}
 }
 
@@ -194,7 +208,7 @@ for (i = 0; i < triangleOffsetTable.length; i++) {//for each entry in the triang
 //submesh finder
 var subMeshes = []//submeshes are unique more than one file names can reference the same submesh
 for (i = 0; i < meshAllocationTable.length; i++) {//this finds unique combinatios of vertex id, indicie id and texture id.
-	let newSubmesh = { name: "", vertexID: meshAllocationTable[i].vertexID, indicieID: meshAllocationTable[i].triangleID, textureID: meshAllocationTable[i].textureID, verticies: [], uvs: [], triangles: [] }//define our new submesh
+	let newSubmesh = { name: "", vertexID: meshAllocationTable[i].vertexID, indicieID: meshAllocationTable[i].triangleID, textureID: meshAllocationTable[i].textureID, verticies: [], uvs: [], triangles: [], normals: [] }//define our new submesh
 	newSubmesh.name = "submesh" + "_V" + meshAllocationTable[i].vertexID + "_I" + meshAllocationTable[i].triangleID + "_T" + meshAllocationTable[i].textureID//the submeshes name includes all the ids
 	//check if it already exists
 	exists = false
@@ -214,6 +228,7 @@ for (i = 0; i < subMeshes.length; i++) {
 	subMeshes[i].verticies = verticies[subMeshes[i].vertexID].pos
 	subMeshes[i].uvs = verticies[subMeshes[i].vertexID].uvs
 	subMeshes[i].triangles = indicies[subMeshes[i].indicieID].indicies
+	subMeshes[i].normals = verticies[subMeshes[i].vertexID].normal
 	generateWavefront(subMeshes[i])
 }
 
@@ -225,9 +240,14 @@ function generateWavefront(input) {
 	for (let i = 0; i < input.verticies.length; i++) {//add vertex data
 		wavefrontFile += "v  " + input.verticies[i].x.toFixed(dp) + " " + input.verticies[i].y.toFixed(dp) + " " + input.verticies[i].z.toFixed(dp) + "\n"
 	}
-
+	wavefrontFile += "#uvs\n"
 	for (let i = 0; i < input.uvs.length; i++) {//add uv data
 		wavefrontFile += "vt  " + input.uvs[i].u + " " + input.uvs[i].v + "\n"
+	}
+
+	wavefrontFile += "#normals\n"
+	for (let i = 0; i < input.uvs.length; i++) {//add normal data
+		wavefrontFile += "vn  " + input.normals[i].x + " " + input.normals[i].y + " " + input.normals[i].z + " " + "\n"
 	}
 
 	wavefrontFile += "#faces\n"
