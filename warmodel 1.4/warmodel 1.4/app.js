@@ -121,12 +121,13 @@ var fileString = fileName + " mesh allocation table\n"
 var lastId = -1
 for (i = 0; i < meshAllocationTable.length; i++) {//for each entry in the tables index
 	if (lastId != meshAllocationTable[i].id) {//if the current id is different than the last one we need to print a new file name, could use the mesh table index instead
-		fileString += files[meshAllocationTable[i].id].name + "\n"
+		fileString += cleanFileName(files[meshAllocationTable[i].id].name) + "\n"
 	}
 	lastId = meshAllocationTable[i].id
 	fileString += "\tsubmesh" + "_V" + meshAllocationTable[i].vertexID + "_I" + meshAllocationTable[i].triangleID + "_T" + meshAllocationTable[i].textureID + "\n"
 }
 console.log(fileString)
+fs.writeFileSync(fileName + " mesh allocation table.txt", fileString)//write to file
 
 //read triangle offset table
 var triangleOffsetTable = []//not to be confused with header.triangleOffsetTable
@@ -241,4 +242,8 @@ function generateWavefront(input) {
 	fs.writeFileSync(input.name.split("\\")[input.name.split("\\").length - 1].replace(/\0/g, '') + ".obj", wavefrontFile)//write to file
 	console.log("done.")
 	return
+}
+
+function cleanFileName(fileName) {//removes any problematic characters from the file name
+	return (fileName.split("\\")[fileName.split("\\").length - 1].replace(/\0/g, ''))
 }
