@@ -3,6 +3,6 @@ Script for extracting mesh data from .spk files for wargame red dragon. written 
 
 note, when importing .obj files in to blender they are verry large and the viewport draw distance will need to be adjusted.
 
-this is currently working on modelesshowroom.spk and should thoretically work on modelesvilles.spk and modelesindustries.spk how ever there are some issues with reading the indexes.
+this is currently working on modelesshowroom.spk, modelesvilles.spk and modelesindustries.spk, mesh_all.spk has some format changes (it may be compresses) and is not compatable
 
 there are currently some issues when exporting UVS
